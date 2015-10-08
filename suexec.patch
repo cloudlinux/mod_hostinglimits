@@ -1,0 +1,98 @@
+diff --git a/support/Makefile.in b/support/Makefile.in
+index 53672e2..eb03b09 100644
+--- a/support/Makefile.in
++++ b/support/Makefile.in
+@@ -60,7 +60,7 @@ checkgid: $(checkgid_OBJECTS)
+ 
+ suexec_OBJECTS = suexec.lo
+ suexec: $(suexec_OBJECTS)
+-	$(LINK) $(suexec_OBJECTS)
++	$(LINK) -ldl $(suexec_OBJECTS)
+ 
+ htcacheclean_OBJECTS = htcacheclean.lo
+ htcacheclean: $(htcacheclean_OBJECTS)
+diff --git a/support/suexec.c b/support/suexec.c
+index f3e1592..407d8d1 100644
+--- a/support/suexec.c
++++ b/support/suexec.c
+@@ -55,6 +55,8 @@
+ #include <grp.h>
+ #endif
+ 
++#include <dlfcn.h>
++
+ /*
+  ***********************************************************************
+  * There is no initgroups() in QNX, so I believe this is safe :-)
+@@ -484,6 +486,71 @@ int main(int argc, char *argv[])
+         exit(108);
+     }
+ 
++#ifndef SECURELVE_MIN_UID
++#define SECURELVE_MIN_UID 100
++#endif
++    /* cagefs 2.0 suexec patch
++     * mod_hostinglimits 0.7 patch
++     * */
++    void *lib_handle;
++    void *lve;              /* lve structure pointer     */
++    lib_handle = dlopen("liblve.so.0", RTLD_LAZY);
++    if (lib_handle) {
++        char *error; char error_msg[1024];
++        // Check for lve-indicator file presence
++        #define MOD_HOSTINGLIMITS_SIGNAL "/var/run/modhostinglimit.flag"
++        struct stat indicator_file;
++        int stat_result = stat(MOD_HOSTINGLIMITS_SIGNAL, &indicator_file);
++        int (*_lve_enter_flags)(void *, uint32_t, uint32_t *, uint32_t) = NULL;
++        int (*_lve_instance_init)(void *) = NULL;
++        dlerror();    /* Clear any existing error */
++        if(!stat_result){
++          _lve_enter_flags = dlsym(lib_handle, "lve_enter_flags");
++          if ((error = dlerror()) != NULL) {
++            log_err("failed to init LVE library (function lve_enter_flags) %s\n", error);
++            _lve_enter_flags = NULL;
++          }
++          _lve_instance_init = dlsym(lib_handle, "lve_instance_init");
++          if ((error = dlerror()) != NULL) {
++            log_err("failed to init LVE library (function lve_instance_init) %s\n", error);
++            _lve_instance_init = NULL;
++          }
++
++        }
++
++        int (*jail)(struct passwd *, int, char*) = dlsym(lib_handle, "lve_jail_uid");
++        if ((error = dlerror()) != NULL) {
++            log_err("failed to init LVE library %s\n", error);
++            exit(130);
++        }
++
++        // Before jail put it into LVE if need
++        if(!stat_result&&_lve_enter_flags&&_lve_instance_init){
++          int lve_rc;
++          errno = 0;
++          lve = malloc(_lve_instance_init(NULL));
++          lve_rc = _lve_instance_init(lve);
++          if (rc || errno){
++            log_err("failed to init LVE instance %d\n", errno);
++          } else {
++            uint32_t lve_cookie;
++            if (uid>0){
++              errno = 0;
++              lve_rc = _lve_enter_flags(lve, (uint32_t)uid, &cookie, (uint32_t)(1 << 2));
++              if (lve_rc){
++                log_err("failed to enter LVE instance %d\n", errno);
++              }
++            }
++          }
++        }
++
++        int result = jail(pw, SECURELVE_MIN_UID, error_msg);
++        if (result != 1 && result != 0) {
++            log_err("CageFS jail error %s\n", error_msg);
++            exit(131);
++        }
++    }
++
+     /*
+      * Change UID/GID here so that the following tests work over NFS.
+      *

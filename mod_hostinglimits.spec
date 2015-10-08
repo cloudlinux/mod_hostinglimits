@@ -1,0 +1,343 @@
+Summary: Apache module
+Name: mod_hostinglimits
+Version: 1.0
+Release: 24%{?dist}.cloudlinux
+Source0: %{name}-%{version}.tar.bz2
+Group: System Environment/Daemons
+License: CloudLinux Commercial License                                                                                                                      
+URL: http://cloudlinux.com
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+BuildRequires: httpd-devel                                                                                                                                 
+BuildRequires: httpd
+BuildRequires: cmake
+BuildRequires: liblve
+BuildRequires: liblve-devel
+
+Requires: httpd
+AutoReq: 0
+
+%description
+This package contains Apache module
+
+%prep
+%setup -q
+
+%build
+cmake -DBUILD:BOOL=TRUE .
+make
+
+%install
+mkdir -p $RPM_BUILD_ROOT%{_sbindir} $RPM_BUILD_ROOT%{_libdir}/httpd/modules/ $RPM_BUILD_ROOT%{_sysconfdir}/httpd/conf.d/
+install -D lib2.2/mod_hostinglimits.so $RPM_BUILD_ROOT%{_libdir}/httpd/modules/
+install -m 644 -D modhostinglimits.conf $RPM_BUILD_ROOT/%{_sysconfdir}/httpd/conf.d/
+
+%clean 
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root,-)
+%doc LICENSE.TXT
+%{_libdir}/httpd/modules/*
+%config(noreplace) %{_sysconfdir}/httpd/conf.d/*
+
+%changelog
+* Wed Sep 16 2015 Alexey Berezhok <alexey_com@ukr.net> 1.0-24
+- new EA4 build path
+
+* Mon May 18 2015 Alexey Berezhok <alexey_com@ukr.net> 1.0-23
+- Fix min_uid
+
+* Wed Mar 25 2015 Alexey Berezhok <alexey_com@ukr.net> 1.0-22
+- Added %{LVE_ID}y parameter for logging
+- Added support min uid
+
+* Fri Feb 18 2015 Alexey Berezhok <alexey_com@ukr.net> 1.0-21
+- Fix memory limit for POA
+
+* Tue Dec 30 2014 Alexey Berezhok <alexey_com@ukr.net> 1.0-20
+- Fix for DA build
+
+* Tue Sep 30 2014 Alexey Berezhok <alexey_com@ukr.net> 1.0-19
+- Fixed trouble with EP for event (moved lve_exit to output filter)
+
+* Mon Aug 18 2014 Alexey Berezhok <alexey_com@ukr.net> 1.0-18
+- Fixed p_cookie variable for event
+
+* Fri Aug 09 2014 Alexey Berezhok <alexey_com@ukr.net> 1.0-17
+- Exit lve on request pool cleanup
+
+* Wed Jun 11 2014 Alexey Berezhok <alexey_com@ukr.net> 1.0-16
+- Disabled re-enter on same LVE
+
+* Wed May 07 2014 Alexey Berezhok <alexey_com@ukr.net> 1.0-15
+- Fixed re-enter error on event
+
+* Thu Jan 23 2014 Alexey Berezhok <alexey_com@ukr.net> 1.0-14
+- Version of module increased
+
+* Wed Jan 22 2014 Alexey Berezhok <alexey_com@ukr.net> 1.0-13
+- Removed lve_own_fs support
+- Added parallels config support
+
+* Wed Jun 06 2013 Alexey Berezhok <alexey_com@ukr.net> 1.0-12
+- Added lve_own_fs support
+
+* Tue Jun 04 2013 Alexey Berezhok <alexey_com@ukr.net> 1.0-11
+- Disabled timeout on request. 
+
+* Tue May 28 2013 Alexey Berezhok <alexey_com@ukr.net> 1.0-10
+- Change redis data structure
+
+* Tue May 28 2013 Alexey Berezhok <alexey_com@ukr.net> 1.0-9
+- Added redis build mode cmake -DREDIS:BOOL=TRUE .
+
+* Mon Aug 27 2012 Alexey Berezhok <alexey_com@ukr.net> 1.0-8
+- Removed apr-lve2 requires
+
+* Wed Aug 22 2012 Alexey Berezhok <alexey_com@ukr.net> 1.0-7
+- cmake changes for DA build errors fixing
+
+* Mon Aug 20 2012 Alexey Berezhok <alexey_com@ukr.net> 1.0-6
+- Change Requires from apr-lve2 = 0.2 to 0.1 version (Plesk apr support)
+
+* Tue May 29 2012 Alexey Berezhok <alexey_com@ukr.net> 1.0-5
+- Added LVEUids debug
+- Fixed bug with mod_userdir + mod_hostinglimits
+- Renew lve api for apache 1.3
+
+* Mon May 14 2012 Alexey Berezhok <alexey_com@ukr.net> 1.0-4
+- Fixed error with LVEErrorCode
+
+* Mon May 14 2012 Alexey Berezhok <alexey_com@ukr.net> 1.0-4
+- Fixed error with LVEErrorCode
+
+* Thu May 10 2012 Alexey Berezhok <alexey_com@ukr.net> 1.0-3
+- Fixed dinamicaly loaded apr functions error
+
+* Tue May 08 2012 Alexey Berezhok <alexey_com@ukr.net> 1.0-2
+- Added Apache 2.4 support
+
+* Mon Mar 19 2012 Alexey Berezhok <alexey_com@ukr.net> 1.0-1
+- Added LVEUseGroupID, added patches for apr
+
+* Fri Feb 16 2012 Alexey Berezhok <alexey_com@ukr.net> 0.9-5
+- Added safe path(outside of DocumentRoot) for cPanels aliases supporting
+
+* Fri Feb 10 2012 Alexey Berezhok <alexey_com@ukr.net> 0.9-4                                                                                                
+- Added .cloudlinux prefix in package name
+
+* Fri Feb 10 2012 Alexey Berezhok <alexey_com@ukr.net> 0.9-3                                                                                                
+- Added suPHP_UserGroup support(without suexec)
+
+* Mon Feb 06 2012 Alexey Berezhok <alexey_com@ukr.net> 0.9-2
+- Rebuild module with new liblve
+
+* Wed Feb 01 2012 Alexey Berezhok <alexey_com@ukr.net> 0.9-1
+- Added SecureLink handling
+- Optimized get uid procedure
+- Moved to new lve API
+
+* Tue Dec 27 2011 Alexey Berezhok <alexey_com@ukr.net> 0.8-4                                                                                               
+- Added custom paths definitions
+
+* Wed Nov 23 2011 Alexey Berezhok <alexey_com@ukr.net> 0.8-3
+- Fixed ErrorDocument conflict with Apache 2.0
+
+* Fri Nov 04 2011 Alexey Berezhok <alexey_com@ukr.net> 0.8-2
+- Change errors URL
+
+* Mon Oct 31 2011 Alexey Berezhok <alexey_com@ukr.net> 0.8-1
+- Added LVERetryAfter: send RetryAfter header
+- Added LVEParseMode: there are three modes of working(CONF, PATH, OWNER)
+- Added LVEPathRegexp: regexp expression for username extracting from path(PATH mode)
+- Added LVEHeaderName: not supported yet
+- Added URL with error description in log
+
+* Fri Aug 19 2011 Alexey Berezhok <alexey_com@ukr.net> 0.7-15                                                                                               
+- Added support new apr                                                                                                                                     
+- Removed h-sphere support. No more need 
+
+* Mon Jul 25 2011 Alexey Berezhok <alexey_com@ukr.net> 0.7-13
+- Added missing requires - apr-lve
+
+* Fri Jun 03 2011 Alexey Berezhok <alexey_com@ukr.net> 0.7-11
+- Fix modhostinglimits.conf
+
+* Thu May 24 2011 Alexey Berezhok <alexey_com@ukr.net> 0.7-10
+- Add new futures from new H-Sphere apache
+
+* Thu Apr 28 2011 Alexey Berezhok <alexey_com@ukr.net> 0.7-9
+- Review FindApacheForCPanel.cmake
+
+* Fri Mar 14 2011 Alexey Berezhok <alexey_com@ukr.net> 0.7-8
+- Restored leave hendler                                                                                                                                    
+- Removed request pool data storing                                                                                                                         
+- Disable empty host debugging
+- Added new directive LVESitesDebug                                                                                                                         
+- Re-entry procedure restored                                                                                                                               
+- Optimized leave handler                                                                                                                                   
+- Optimized work with child pools
+- Reset errno on module initializtion
+- Repaired lve available check
+- Added support mod_ruid2                                                                                                                                   
+- Added new derctive LVEUser                                                                                                   
+- Added support of apache-mpm-itk
+
+* Mon Feb 14 2011 Alexey Berezhok <alexey_com@ukr.net> 0.7-7
+  - Fixed re-entry error
+  - Added license file
+
+* Thu Jan 13 2011 Alexey Berezhok <alexey_com@ukr.net> 0.7-6
+  - Added additional Requires: apr-lve 
+
+* Wed Jan 12 2011 Alexey Berezhok <alexey_com@ukr.net> 0.7-5
+  - Added support apr_lve_environment_init for lve0.8
+
+* Tue Jan  4 2011 Anton Volkov <avolkov@cloudlinux.com> 0.7-4
+  - Default "error 508" message is changed
+
+* Fri Dec 24 2010 Alexey Berezhok <alexey_com@ukr.net> 0.7-3
+  - Bug fix in module for Apache 1.3 (multiple "error 508" messages)
+
+* Wed Dec 22 2010 Anton Volkov <avolkov@cloudlinux.com> 0.7-2
+  - Added support for new LVEErrorCode directive
+  - Default LVEErrorCode is changed from 503 to 508, default error 508 page is added in module source
+  - Bug fix: checking whether we are already in LVE (errno should be EPERM, not -EALREADY)
+  - Bug fix: logging "already in LVE" error in module for Apache 1.3
+
+* Thu Dec 9 2010 Alexey Berezhok <alexey_com@ukr.net> 0.7-1
+  - Add new spec file 3 rpm in 1 spec file
+  - Add fix in *.cmake file for building under H-Sphere 3.1
+  
+* Tue Dec 8 2010 Anton Volkov <avolkov@cloudlinux.com> 0.7-1  
+  - Add new CMakeList and *.cmake files for RPM building
+
+* Tue Dec 7 2010 Anton Volkov <avolkov@cloudlinux.com> 0.7-1                                                                                                   
+  - [#Feature 189] AllowedHandlers and DenyHandlers directives regex support is added
+  - [#Feature 191] DenyHandlers directive support is added
+  - Allow to serve content on LVE re-entry(apache 1.3)
+
+* Sun Dec 5 2010 Igor Seletskiy <iseletsk@gmail.com>
+  - Correctly display errno on LVE error
+  - Allow to serve content on LVE re-entry
+
+* Sat Aug 28 2010 Leonid Kanter <lkanter@cloudlinux.com>
+- rebuild in new environment
+
+* Tue Jul 13 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Fix bug with User and Group params. I can get it bu using server record <commit: 54be580ac5db55913a32a5cf8fb01981a671ef84>
+
+* Fri Jul 2 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Add private thread variable p-cookie instead mutex <commit: a3d7f50a59f2f94b463edfdf76f67c4a5235cfd8>
+
+* Wed Jun 30 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Add mutex for p_cookie checking <commit: f8e8fd9c71dfbf0c75f2154f3266aedbc5764572>
+
+* Wed Jun 23 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Fix <commit: 0a852966ccef7b7ca9ec6ae32247d4ba7fc5762f>
+
+* Wed Jun 23 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Fix in cmake <commit: ac62abc5ff2832fe8241263259d159d968a5df34>
+
+* Wed Jun 23 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Fix in cmake for cPanel <commit: c1e0c7cc6dfb375a766759d78c1dd2176a3b1c55>
+
+* Tue Jun 22 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Fix bug when p_cookie is not installed process was fall down <commit: 44668ecf8599ee39ab8f21ae632d0e4514f67192>
+
+* Mon Jun 21 2010 Igor Seletskiy <iseletsk@piter.seletskiy.com>
+- Merge branch 'master' of gitosis@pylesos.interdon.net:mod_hostinglimits <commit: f3b7c8df2280fa81b54c33dc53bf6d46f7cf4caa>
+
+* Mon Jun 21 2010 Igor Seletskiy <iseletsk@piter.seletskiy.com>
+- moved p_cookie to be taken from request_config, making module MPM Worker safe <commit: fdab876e8fb52f0f3a21f9fa836cc411b9d4a392>
+
+* Wed Jun 16 2010 Sergey Vakula <svakula@cloudlinux.com>
+- update specs <commit: 018fac8e1778b07bf12f9bbcd33d3522d55d0d60>
+
+* Wed Jun 16 2010 Sergey Vakula <svakula@cloudlinux.com>
+- fix bugs in specs <commit: b669e5a8e977897ac52ba02ceb3a0699f4424d59>
+
+* Thu Apr 8 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Add include in spec <commit: e94d248f2d49d23fd9fc9b3f6b25329a27f39941>
+
+* Wed Apr 7 2010 Alexey Berezhok <alexey_com@ukr.net>
+- add correct name to hsphere1.3 <commit: 18101137dff8178f38f7b8369917514768993f50>
+
+* Wed Apr 7 2010 Alexey Berezhok <alexey_com@ukr.net>
+- add correct name to hsphere1.3 <commit: 94bc51cc8b31b2a615ce8d1c1af068da7e210c3e>
+
+* Wed Apr 7 2010 Alexey Berezhok <alexey_com@ukr.net>
+- 1.3 for sphere <commit: f3a5f66b7983bfeb0b27742d0b776bb1431fb6da>
+
+* Wed Apr 7 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Add 1.3 & 2.2 cmake for Hsphere <commit: 2f603ebd9af736fd5614b129e8c223ea44db1320>
+
+* Fri Apr 2 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Fix mistake in FindApache2.cmake <commit: b94e18325a29959ebda7bdf9e5a5d0c90d1d02ad>
+
+* Fri Apr 2 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Add support apache 1.3 <commit: de9aacddb08836b9e32014500033efebfb4d0bff>
+
+* Fri Mar 26 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Add sources for apache 1.3 <commit: d086ed85f645276aa8c5e2d9281578af8d778414>
+
+* Wed Mar 10 2010 Alexey Berezhok <alexey_com@ukr.net>
+- fix spec file's string with liblve to lve-devel. liblve - for future releases <commit: fb10d65ba6364b6ce78e70e3decbf8200b8a0be2>
+
+* Fri Mar 5 2010 Igor Seletskiy <iseletsk@piter.seletskiy.com>
+- Added directories/confgis to make sure mod_hostinglimits compiles under directadmin <commit: 242e320b83b167435f2b2dccb7c4d3ca045e3a42>
+
+* Thu Feb 18 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Remove liblve from spec <commit: 68af6a50766c21ed749da2455eadb29f63ef2672>
+
+* Thu Feb 18 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Add liblve to spec <commit: d5ecb1435dede2e2e2c24b6c82149358fdc1bc9d>
+
+* Mon Feb 8 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Add requires: lve-utils <commit: d22b71d4cd0afbc2b5ff41a01ea5408a0a578451>
+
+* Mon Feb 8 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Fix mistakes in spec <commit: 0446e51a2c1f920314d4391212c8d7032a007751>
+
+* Mon Feb 8 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Remove error file hsphere_modconfiglimits.conf <commit: a4cce28af4360c91bca0dfad9bf60dce4e5159e3>
+
+* Mon Feb 8 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Fix mistakes in spec <commit: 2854ca35fbfb3154bbb88890c7758bdb0a8ac1b9>
+
+* Mon Feb 8 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Add spec for hsphere <commit: 29f85a5f4919c8adbcd6e59e6c94e55a7c2e5d10>
+
+* Mon Feb 1 2010 Alexey Berezhok <alexey_com@ukr.net>
+- Add to conf additional handlers <commit: 775d841058723a563b0a4a0f4af6a8f7ba68c4c8>
+
+* Wed Jan 27 2010 Alexey Berezhok <alexey_com@ukr.net>
+- add mode -m 644 to spec file and add php-script to modhostinglimits.conf <commit: 6bf688d72a68442b2886926fba8cb19ba6a10fc7>
+
+* Wed Jan 27 2010 Igor Seletskiy <iseletsk@piter.seletskiy.com>
+- Removed executable permissions <commit: 8379f84200ed3be329a9b946bce54a0533c2dd91>
+
+* Wed Jan 27 2010 Igor Seletskiy <iseletsk@piter.seletskiy.com>
+- Fixed issue when mod_hostinglimits intercepts request already in lve (when php is done via cgi) <commit: abccd6a8276eefca2e50dcf03cfb0519fe3b6f26>
+
+* Tue Jan 26 2010 Igor Seletskiy <iseletsk@piter.seletskiy.com>
+- Fixed gid compile bug <commit: e4ab86d7033cd0392391729a0414a0fb14b7d237>
+
+* Tue Jan 26 2010 Igor Seletskiy <iseletsk@piter.seletskiy.com>
+- Removed su limits, fixed bug <commit: 7ee0679d82ca3f37d7f3c057a912c36acdf7d087>
+
+* Sun Jan 10 2010 Igor Seletskiy <iseletsk@piter.seletskiy.com>
+- Ability to provide which handlers to treat as suexec, and which to treat regularly <commit: 37ad6a8d6dafd9486217f60e369c530c17510ac6>
+
+* Tue Dec 29 2009 Igor Seletskiy <iseletsk@piter.seletskiy.com>
+- Made mod_hostinglimits work with new LVE model <commit: eecd02909035b143dd1e3f70ebc7075ad50b1e51>
+
+* Sun Dec 27 2009 Igor Seletskiy <iseletsk@piter.seletskiy.com>
+- Old files, no longer used <commit: 2f088638b36307511172b782a01d61ad0b9b45bf>
+
+* Tue Dec 8 2009 Alexey Berezhok <alexey_com@ukr.net>
+- spec added <commit: 0ef33419b8bfb6ad532591e16b36d3458dbd2efc>
+
+* Mon Dec 7 2009 Alexey Berezhok <alexey_com@ukr.net>
+- Initial load <commit: ba942b8f9c5e124d0486635abd4934a297c70f4f>

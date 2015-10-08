@@ -1,0 +1,83 @@
+diff --git a/srclib/apr/include/apr_thread_proc.h b/srclib/apr/include/apr_thread_proc.h
+index 7df84ef..2659ec1 100644
+--- a/srclib/apr/include/apr_thread_proc.h
++++ b/srclib/apr/include/apr_thread_proc.h
+@@ -204,6 +204,15 @@ typedef enum {
+     APR_KILL_ONLY_ONCE          /**< send SIGTERM and then wait */
+ } apr_kill_conditions_e;
+ 
++/* LVE support */
++
++#define LVE_APACHE_SUPPORT
++
++APR_DECLARE(apr_status_t) apr_lve_environment_init(int lve_no_maxenter_value,
++                                                   void *lve_ptr,
++                                                   int (*lve_enter_flags_function_ptr)(void *, ...),
++                                                   char *suexec_string);
++
+ /* Thread Function definitions */
+ 
+ #if APR_HAS_THREADS
+diff --git a/srclib/apr/threadproc/unix/proc.c b/srclib/apr/threadproc/unix/proc.c
+index 283706c..a37e9da 100644
+--- a/srclib/apr/threadproc/unix/proc.c
++++ b/srclib/apr/threadproc/unix/proc.c
+@@ -14,17 +14,34 @@
+  * limitations under the License.
+  */
+ 
++
+ #include "apr_arch_threadproc.h"
+ #include "apr_strings.h"
+ #include "apr_portable.h"
+ #include "apr_signal.h"
+ #include "apr_random.h"
+ 
++static int global_lve_no_maxenter_value = 0;
++static void *global_lve_ptr = NULL;
++static int (*global_lve_enter_flags_function_ptr)(void *, ...) = NULL;
++static char global_suexec_path[4096] = "";
++
+ /* Heavy on no'ops, here's what we want to pass if there is APR_NO_FILE
+  * requested for a specific child handle;
+  */
+ static apr_file_t no_file = { NULL, -1, };
+ 
++APR_DECLARE(apr_status_t) apr_lve_environment_init(int lve_no_maxenter_value,
++                                                   void *lve_ptr,
++                                                   int (*lve_enter_flags_function_ptr)(void *, ...),
++                                                   char *suexec_string){
++    global_lve_no_maxenter_value = lve_no_maxenter_value;
++    global_lve_ptr = lve_ptr;
++    global_lve_enter_flags_function_ptr = lve_enter_flags_function_ptr;
++    apr_cpystrn(global_suexec_path, suexec_string, (apr_size_t)4096);
++    return APR_SUCCESS;
++}
++
+ APR_DECLARE(apr_status_t) apr_procattr_create(apr_procattr_t **new,
+                                               apr_pool_t *pool)
+ {
+@@ -399,6 +416,23 @@ APR_DECLARE(apr_status_t) apr_proc_create(apr_proc_t *new,
+         int status;
+         /* child process */
+ 
++        if (global_lve_enter_flags_function_ptr){
++           if(!strcmp(progname, global_suexec_path)&&
++               args && args[1] &&
++               apr_atoi64(args[1])
++           ){
++
++              uid_t i_uid = (uid_t)apr_atoi64(args[1]);
++              uint32_t cookie;
++              if (i_uid>0){
++              int rc = (int)(*global_lve_enter_flags_function_ptr)(global_lve_ptr, i_uid, &cookie, global_lve_no_maxenter_value);
++              if (rc!=0){
++                        //TODO
++              }
++             }
++            }
++        }
++
+         /*
+          * If we do exec cleanup before the dup2() calls to set up pipes
+          * on 0-2, we accidentally close the pipes used by programs like

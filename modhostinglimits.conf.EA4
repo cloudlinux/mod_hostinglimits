@@ -1,0 +1,7 @@
+LoadModule hostinglimits_module /etc/apache2/modules/mod_hostinglimits.so
+
+<IfModule mod_hostinglimits.c>
+   SkipErrors Off
+   AllowedHandlers cgi-script %php% fcgid-script application/x-miva-compiled
+</IfModule>
+   

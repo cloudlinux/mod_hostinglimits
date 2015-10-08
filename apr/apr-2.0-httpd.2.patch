@@ -1,0 +1,97 @@
+diff --git a/srclib/apr/include/apr_thread_proc.h b/srclib/apr/include/apr_thread_proc.h
+index be58604..5b6f597 100644
+--- a/srclib/apr/include/apr_thread_proc.h
++++ b/srclib/apr/include/apr_thread_proc.h
+@@ -193,6 +193,16 @@ typedef enum {
+     APR_KILL_ONLY_ONCE          /**< send SIGTERM and then wait */
+ } apr_kill_conditions_e;
+ 
++/* LVE support */
++
++#define LVE_APACHE_SUPPORT
++
++APR_DECLARE(apr_status_t) apr_lve_environment_init(int lve_no_maxenter_value,
++                                                   void *lve_ptr,
++                                                   int (*lve_enter_flags_function_ptr)(void *, ...),
++                                                   int (*lve_leave_function_ptr)(void *, ...),
++                                                   char *suexec_string);
++
+ /* Thread Function definitions */
+ 
+ #if APR_HAS_THREADS
+diff --git a/srclib/apr/threadproc/unix/proc.c b/srclib/apr/threadproc/unix/proc.c
+index 95e0bd2..4bfb4ae 100644
+--- a/srclib/apr/threadproc/unix/proc.c
++++ b/srclib/apr/threadproc/unix/proc.c
+@@ -19,6 +19,29 @@
+ #include "apr_portable.h"
+ #include "apr_signal.h"
+ 
++static int global_lve_no_maxenter_value = 0;
++static void *global_lve_ptr = NULL;
++static int (*global_lve_enter_flags_function_ptr)(void *, ...) = NULL;
++static int (*global_lve_leave_function_ptr)(void *, ...) = NULL;
++static char global_suexec_path[4096] = "";
++
++ APR_DECLARE(apr_status_t) apr_lve_environment_init(int lve_no_maxenter_value,
++                                                    void *lve_ptr,
++                                                    int (*lve_enter_flags_function_ptr)(void *, ...),
++                                                    int (*lve_leave_function_ptr)(void *, ...),
++                                                    char *suexec_string){
++     global_lve_no_maxenter_value = lve_no_maxenter_value;
++     global_lve_ptr = lve_ptr;
++     global_lve_enter_flags_function_ptr = lve_enter_flags_function_ptr;
++     global_lve_leave_function_ptr = lve_leave_function_ptr;
++     apr_cpystrn(global_suexec_path, suexec_string, (apr_size_t)4096);
++     return APR_SUCCESS;
++}
++
++ APR_DECLARE(apr_status_t) apr_lve_environment_init_ver1(){
++	 return APR_SUCCESS;
++ }
++
+ APR_DECLARE(apr_status_t) apr_procattr_create(apr_procattr_t **new,
+                                               apr_pool_t *pool)
+ {
+@@ -331,7 +354,28 @@ APR_DECLARE(apr_status_t) apr_proc_create(apr_proc_t *new,
+         }
+     }
+ 
++    uint32_t cookie = 0;
++    if (global_lve_enter_flags_function_ptr &&
++    		global_lve_leave_function_ptr &&
++    		     global_lve_ptr){
++       if(!strcmp(progname, global_suexec_path)&&
++                 args && args[1] &&
++                 apr_atoi64(args[1])
++         ){
++
++           uid_t i_uid = (uid_t)apr_atoi64(args[1]);
++           if (i_uid>0){
++             (*global_lve_enter_flags_function_ptr)(global_lve_ptr, i_uid, &cookie, global_lve_no_maxenter_value);
++           }
++        }
++    }
++
+     if ((new->pid = fork()) < 0) {
++    	if (global_lve_enter_flags_function_ptr &&
++    	    		global_lve_leave_function_ptr &&
++    	    			global_lve_ptr){
++    	    	if(cookie) (*global_lve_leave_function_ptr)(global_lve_ptr, &cookie);
++    	}
+         return errno;
+     }
+     else if (new->pid == 0) {
+@@ -497,6 +541,12 @@ APR_DECLARE(apr_status_t) apr_proc_create(apr_proc_t *new,
+                     * error code. */
+     }
+ 
++    if (global_lve_enter_flags_function_ptr &&
++    		global_lve_leave_function_ptr &&
++    			global_lve_ptr){
++    	if(cookie) (*global_lve_leave_function_ptr)(global_lve_ptr, &cookie);
++    }
++
+     /* Parent process */
+     if (attr->child_in) {
+         apr_file_close(attr->child_in);
