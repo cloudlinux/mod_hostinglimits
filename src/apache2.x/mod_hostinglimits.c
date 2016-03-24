@@ -140,7 +140,7 @@ typedef struct hostinglimits_module_cfg
   uint32_t retryAfter;
   int mode;
   char *header;
-  char *path_regex;	// Compiled regex buffer
+  const char *path_regex;	// Compiled regex buffer
   uid_t suphp_uid;
   uid_t suphp_gid;
 } hostinglimits_module_cfg;
@@ -639,7 +639,8 @@ set_lve_pathregexp (cmd_parms * cmd, void *mcfg, const char *regexp_data)
 	{
 	  right_param = 0;
 	} else {
-		ap_regfree (&rx);
+        cfg->path_regex = regexp_data;
+        ap_regfree (&rx);
 	}
 
 #else
